@@ -6,9 +6,3 @@ services:
     build: ./users-api
     ports:
       - "9001:9001"
-
-  books-api:
-    build: ./books-api
-    ports:
-      - "9000:9000"
-
