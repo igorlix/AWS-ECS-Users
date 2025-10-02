@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+
+  user-api:
+    build: ./users-api
+    ports:
+      - "9001:9001"
+
