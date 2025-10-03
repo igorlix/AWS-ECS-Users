@@ -1,0 +1,53 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+    
+      - echo Logging in to Amazon ECR...
+      - aws --version
+    
+      # 1. Descobre o ID da conta da AWS dinamicamente para maior robustez.
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      
+      # 2. Usa a variável ACCOUNT_ID (obtida acima) para fazer o login.
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+      # - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 488369868153.dkr.ecr.us-east-2.amazonaws.com
+      # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION
+      
+      # 3. Usa a variável ACCOUNT_ID para definir a URI do repositório.
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.us-east-1/users-api
+      
+      # Cria uma tag única baseada no hash do commit do Git (melhor prática).
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image for users-api...
+      # Constrói a imagem Docker a partir do Dockerfile no diretório atual.
+      # - docker build -t users-api .
+      - docker build -t $REPOSITORY_URI:latest ./services/users-api
+      # Adiciona a tag única à imagem recém-construída.
+      # - docker tag users-api:latest 488369868153.dkr.ecr.us-east-2.amazonaws.com/users-api:latest
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images for users-api...
+       - echo "Waiting for 5 seconds for network to stabilize before push..."
+      - sleep 5
+      # Envia a imagem para o ECR com a tag 'latest'.
+      # - docker push 488369868153.dkr.ecr.us-east-2.amazonaws.com/users-api:latest
+      - docker push $REPOSITORY_URI:latest
+      # Envia a mesma imagem com a tag única (para versionamento).
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo "Creating ECS deployment file..."
+      # Cria o arquivo de definição de imagem que o CodePipeline usará para o deploy.
+      - printf '[{"name":"users-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+
+# Define o artefato de saída do build, que será consumido pelo CodePipeline.
+artifacts:
+  files:
+    - imagedefinitions.json
