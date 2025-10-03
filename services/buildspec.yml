@@ -6,8 +6,8 @@ phases:
     commands:
       - echo "Logging in to Amazon ECR via NAT Gateway..."
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
-      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.us-east-1/users-api
+      - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.us-east-2/users-api
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
 
 
