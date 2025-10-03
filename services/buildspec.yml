@@ -2,12 +2,10 @@ version: 0.2
 
 phases:
   install:
-      runtime-versions:
-        # Especifica a versão do Docker para garantir consistência
-        docker: 20
+      # REMOVEMOS COMPLETAMENTE O BLOCO 'runtime-versions' DESTA VERSÃO
       commands:
         # Paramos o serviço Docker que o CodeBuild inicia por padrão
-        - echo "Stopping the default Docker daemon..."
+        - echo "Stopping the default Docker daemon to apply custom DNS configuration..."
         - systemctl stop docker
   
         # Criamos o diretório de configuração, caso não exista
@@ -18,7 +16,7 @@ phases:
         - |
           echo '{"dns": ["10.0.0.2", "169.254.169.253"]}' > /etc/docker/daemon.json
   
-        # Reiniciamos o serviço Docker para que ele leia a nova configuração
+        # Iniciamos o serviço Docker para que ele leia a nova configuração
         - echo "Starting Docker daemon with new DNS configuration..."
         - systemctl start docker
         - echo "Verifying Docker daemon is running..."
