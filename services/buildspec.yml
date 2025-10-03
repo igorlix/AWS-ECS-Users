@@ -2,25 +2,24 @@ version: 0.2
 
 phases:
   install:
-      # REMOVEMOS COMPLETAMENTE O BLOCO 'runtime-versions' DESTA VERSÃO
-      commands:
-        # Paramos o serviço Docker que o CodeBuild inicia por padrão
-        - echo "Stopping the default Docker daemon to apply custom DNS configuration..."
-        - systemctl stop docker
-  
-        # Criamos o diretório de configuração, caso não exista
-        - mkdir -p /etc/docker
-        
-        # Criamos o arquivo de configuração para forçar o uso do DNS da VPC
-        - echo "Creating Docker daemon configuration file..."
-        - |
-          echo '{"dns": ["10.0.0.2", "169.254.169.253"]}' > /etc/docker/daemon.json
-  
-        # Iniciamos o serviço Docker para que ele leia a nova configuração
-        - echo "Starting Docker daemon with new DNS configuration..."
-        - systemctl start docker
-        - echo "Verifying Docker daemon is running..."
-        - docker info
+    commands:
+      - echo "Attempting to stop the existing Docker daemon..."
+      # Encontra o ID do processo do Docker daemon que o CodeBuild iniciou...
+      - DOCKER_PID=$(pgrep dockerd)
+      # ...e finaliza o processo diretamente.
+      - if [ -n "$DOCKER_PID" ]; then kill $DOCKER_PID; sleep 5; fi
+
+      - echo "Configuring and starting a new Docker daemon..."
+      - mkdir -p /etc/docker
+      - |
+        echo '{"dns": ["10.0.0.2", "169.254.169.253"]}' > /etc/docker/daemon.json
+      
+      # Inicia nosso próprio Docker daemon em segundo plano com a configuração correta
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
+      
+      # Espera de forma inteligente até que o novo daemon esteja pronto
+      - timeout 15s sh -c "until docker info; do echo .; sleep 1; done"
+      - echo "New Docker daemon is ready."
 
   pre_build:
     commands:
