@@ -23,7 +23,7 @@ phases:
   post_build:
     commands:
       - echo "Pushing the Docker images via NAT Gateway..."
-      - docker push 488369868153.dkr.ecr.us-east-2.amazonaws.com/users-api:latest
+      - docker push 488369868153.dkr.ecr.us-east-2/users-api:latest
       - echo "Creating ECS deployment file..."
       - printf '[{"name":"users-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       
