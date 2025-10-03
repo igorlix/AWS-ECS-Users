@@ -1,32 +1,29 @@
 version: 0.2
 
 phases:
-
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR via NAT Gateway..."
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com
-      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.us-east-2/users-api
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/users-api
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
 
-
-
-      
   build:
     commands:
       - echo "Build started on `date`"
       - echo Building the Docker image for users-api...
       - docker build -t $REPOSITORY_URI:latest ./services/users-api
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
-      
+
   post_build:
     commands:
       - echo "Pushing the Docker images via NAT Gateway..."
-      - docker push 488369868153.dkr.ecr.us-east-2/users-api:latest
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo "Creating ECS deployment file..."
       - printf '[{"name":"users-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      
+
 artifacts:
   files:
     - imagedefinitions.json
