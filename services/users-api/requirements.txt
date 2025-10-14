@@ -2,5 +2,9 @@ fastapi
 uvicorn
 pydantic[email]
 httpx
-tenacity 
+tenacity
 requests
+psycopg2-binary
+pgvector
+boto3
+sqlalchemy
